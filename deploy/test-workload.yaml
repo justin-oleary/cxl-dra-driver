@@ -1,0 +1,40 @@
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: cxl-memory-claim-template
+  namespace: cxl-system
+spec:
+  spec:
+    devices:
+      requests:
+        - name: cxl-mem
+          exactly:
+            deviceClassName: cxl-memory-pool
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cxl-test-pod
+  namespace: cxl-system
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: workload
+      image: ubuntu:latest
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        claims:
+          - name: cxl-memory
+  resourceClaims:
+    - name: cxl-memory
+      resourceClaimTemplateName: cxl-memory-claim-template

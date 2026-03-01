@@ -1,0 +1,19 @@
+# K3s Registry Configuration
+#
+# For K3s to pull from the in-cluster registry, create this file on each node:
+#   /etc/rancher/k3s/registries.yaml
+#
+# Then restart K3s: sudo systemctl restart k3s
+#
+# Content:
+mirrors:
+  "registry.registry.svc.cluster.local:5000":
+    endpoint:
+      - "http://registry.registry.svc.cluster.local:5000"
+  "localhost:5000":
+    endpoint:
+      - "http://localhost:5000"
+configs:
+  "registry.registry.svc.cluster.local:5000":
+    tls:
+      insecure_skip_verify: true

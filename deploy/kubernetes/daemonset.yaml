@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cxl-node-plugin
+  namespace: cxl-system
+  labels:
+    app: cxl-node-plugin
+spec:
+  selector:
+    matchLabels:
+      app: cxl-node-plugin
+  template:
+    metadata:
+      labels:
+        app: cxl-node-plugin
+    spec:
+      hostNetwork: true
+      serviceAccountName: cxl-dra-controller
+      containers:
+        - name: plugin
+          image: localhost:30500/cxl-node-plugin:latest
+          imagePullPolicy: Always
+          args:
+            - "--node-name=$(NODE_NAME)"
+            - "--v=2"
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: plugins-registry
+              mountPath: /var/lib/kubelet/plugins_registry
+            - name: plugins
+              mountPath: /var/lib/kubelet/plugins
+              mountPropagation: Bidirectional
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: plugins-registry
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: DirectoryOrCreate
+        - name: plugins
+          hostPath:
+            path: /var/lib/kubelet/plugins
+            type: DirectoryOrCreate

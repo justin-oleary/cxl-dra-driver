@@ -1,0 +1,8 @@
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: cxl-memory-pool
+spec:
+  selectors:
+    - cel:
+        expression: device.driver == "cxl.example.com"

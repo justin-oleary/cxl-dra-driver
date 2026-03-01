@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cxl-dra-controller
+  namespace: cxl-system
+  labels:
+    app: cxl-dra-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cxl-dra-controller
+  template:
+    metadata:
+      labels:
+        app: cxl-dra-controller
+    spec:
+      serviceAccountName: cxl-dra-controller
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: controller
+          image: localhost:30500/cxl-dra-controller:latest
+          imagePullPolicy: Always
+          args:
+            - "--cxl-endpoint=http://cxl-mock-switch.cxl-system.svc.cluster.local:8080"
+            - "--v=2"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
