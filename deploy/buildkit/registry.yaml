@@ -30,14 +30,49 @@ spec:
       labels:
         app: registry
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: registry
           image: registry:2
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+            initialDelaySeconds: 3
+            periodSeconds: 5
           volumeMounts:
             - name: data
               mountPath: /var/lib/registry
+            - name: tmp
+              mountPath: /tmp
           env:
             - name: REGISTRY_STORAGE_DELETE_ENABLED
               value: "true"
@@ -45,6 +80,8 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: registry-data
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

@@ -65,7 +65,7 @@ func main() {
 
 func startPluginServer(nodeName string) (*grpc.Server, func(), error) {
 	// create directory first, then clean up any stale socket
-	if err := os.MkdirAll(filepath.Dir(PluginSocketPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(PluginSocketPath), 0750); err != nil {
 		return nil, nil, fmt.Errorf("create socket directory: %w", err)
 	}
 
@@ -78,7 +78,7 @@ func startPluginServer(nodeName string) (*grpc.Server, func(), error) {
 	}
 
 	server := grpc.NewServer()
-	plugin := nodeplugin.New(nodeName)
+	plugin := nodeplugin.New()
 	drapb.RegisterDRAPluginServer(server, plugin)
 
 	go func() {
@@ -90,7 +90,7 @@ func startPluginServer(nodeName string) (*grpc.Server, func(), error) {
 	klog.InfoS("DRA plugin server listening", "socket", PluginSocketPath)
 
 	cleanup := func() {
-		os.Remove(PluginSocketPath)
+		_ = os.Remove(PluginSocketPath)
 	}
 
 	return server, cleanup, nil
@@ -98,7 +98,7 @@ func startPluginServer(nodeName string) (*grpc.Server, func(), error) {
 
 func startRegistrationServer() (*grpc.Server, func(), error) {
 	// create directory first, then clean up any stale socket
-	if err := os.MkdirAll(filepath.Dir(RegistrarSocket), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(RegistrarSocket), 0750); err != nil {
 		return nil, nil, fmt.Errorf("create registration socket directory: %w", err)
 	}
 
@@ -123,7 +123,7 @@ func startRegistrationServer() (*grpc.Server, func(), error) {
 	klog.InfoS("registration server listening", "socket", RegistrarSocket)
 
 	cleanup := func() {
-		os.Remove(RegistrarSocket)
+		_ = os.Remove(RegistrarSocket)
 	}
 
 	return server, cleanup, nil

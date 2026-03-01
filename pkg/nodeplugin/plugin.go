@@ -3,7 +3,6 @@ package nodeplugin
 
 import (
 	"context"
-	"time"
 
 	"k8s.io/klog/v2"
 	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
@@ -13,12 +12,11 @@ import (
 // Plugin implements the DRA node plugin interface.
 type Plugin struct {
 	drapb.UnimplementedDRAPluginServer
-	nodeName string
 }
 
 // New creates a DRA node plugin.
-func New(nodeName string) *Plugin {
-	return &Plugin{nodeName: nodeName}
+func New() *Plugin {
+	return &Plugin{}
 }
 
 // NodePrepareResources prepares CXL memory for pod use.
@@ -28,16 +26,21 @@ func (p *Plugin) NodePrepareResources(ctx context.Context, req *drapb.NodePrepar
 	}
 
 	for _, claim := range req.Claims {
+		// check for context cancellation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		klog.InfoS("preparing CXL memory",
 			"claimUID", claim.Uid,
 			"claimName", claim.Name,
 			"namespace", claim.Namespace,
 		)
 
-		// simulate hardware attachment
-		time.Sleep(500 * time.Millisecond)
+		// TODO: real hardware attachment would go here
+		// for mock, this is a no-op
 
-		klog.InfoS("mock CXL memory attached to container cgroup",
+		klog.InfoS("CXL memory prepared",
 			"claimUID", claim.Uid,
 		)
 
@@ -54,6 +57,11 @@ func (p *Plugin) NodeUnprepareResources(ctx context.Context, req *drapb.NodeUnpr
 	}
 
 	for _, claim := range req.Claims {
+		// check for context cancellation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		klog.InfoS("releasing CXL memory",
 			"claimUID", claim.Uid,
 			"claimName", claim.Name,

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type Pool struct {
@@ -30,15 +31,23 @@ func main() {
 	http.HandleFunc("/allocate", allocateHandler)
 	http.HandleFunc("/release", releaseHandler)
 
+	server := &http.Server{
+		Addr:              ":8080",
+		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
 	log.Println("Mock CXL Switch listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(server.ListenAndServe())
 }
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"total_gb":     pool.TotalGB,
 		"allocated_gb": pool.AllocatedGB,
 		"available_gb": pool.TotalGB - pool.AllocatedGB,
@@ -74,7 +83,7 @@ func allocateHandler(w http.ResponseWriter, r *http.Request) {
 		req.SizeGB, req.NodeName, pool.AllocatedGB)
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "allocated"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "allocated"})
 }
 
 func releaseHandler(w http.ResponseWriter, r *http.Request) {
@@ -108,5 +117,5 @@ func releaseHandler(w http.ResponseWriter, r *http.Request) {
 		release, req.NodeName, pool.AllocatedGB)
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "released"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "released"})
 }

@@ -16,6 +16,9 @@ spec:
     spec:
       hostNetwork: true
       serviceAccountName: cxl-dra-controller
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: plugin
           image: localhost:30500/cxl-node-plugin:latest
@@ -43,6 +46,22 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+          livenessProbe:
+            exec:
+              command:
+                - test
+                - -S
+                - /var/lib/kubelet/plugins/cxl.example.com/plugin.sock
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - test
+                - -S
+                - /var/lib/kubelet/plugins/cxl.example.com/plugin.sock
+            initialDelaySeconds: 5
+            periodSeconds: 10
       volumes:
         - name: plugins-registry
           hostPath:

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -22,10 +23,19 @@ type request struct {
 	SizeGB   int    `json:"size_gb"`
 }
 
+// CXLClient defines the interface for CXL switch operations.
+type CXLClient interface {
+	Allocate(ctx context.Context, nodeName string, sizeGB int) error
+	Release(ctx context.Context, nodeName string, sizeGB int) error
+}
+
+// Client implements CXLClient via HTTP.
 type Client struct {
 	endpoint   string
 	httpClient *http.Client
 }
+
+var _ CXLClient = (*Client)(nil)
 
 func New(endpoint string) *Client {
 	return &Client{
@@ -58,9 +68,13 @@ func (c *Client) do(ctx context.Context, path, nodeName string, sizeGB int) erro
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return ErrSwitchUnavailable
+		return fmt.Errorf("%w: %v", ErrSwitchUnavailable, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		// Drain body to enable connection reuse
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
