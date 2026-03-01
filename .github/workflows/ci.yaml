@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -quiet ./...
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Run tests
+        run: go test -race -v ./...
+
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Run fuzz tests
+        run: |
+          go test -fuzz=FuzzGetAllocationMeta -fuzztime=30s ./pkg/controller/...
+          go test -fuzz=FuzzAllocationMetaMarshal -fuzztime=30s ./pkg/controller/...
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build binaries
+        run: |
+          CGO_ENABLED=0 go build -o bin/cxl-controller ./cmd/controller
+          CGO_ENABLED=0 go build -o bin/cxl-node-plugin ./cmd/node-plugin
+          CGO_ENABLED=0 go build -o bin/cxl-mock-switch ./cxl-mock-switch
+
+      - name: Build container images
+        run: |
+          docker build -t cxl-dra-controller:test -f Dockerfile.controller .
+          docker build -t cxl-node-plugin:test -f Dockerfile.node-plugin .
+          docker build -t cxl-mock-switch:test -f Dockerfile.mock-switch .

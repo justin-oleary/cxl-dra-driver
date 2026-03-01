@@ -1,6 +1,6 @@
-# cxl-dra-driver
+# CXL DRA Driver
 
-Kubernetes Dynamic Resource Allocation (DRA) driver for CXL pooled memory orchestration. Targets Kubernetes v1.35 with the stable `resource.k8s.io/v1` API.
+Kubernetes Dynamic Resource Allocation (DRA) driver for CXL pooled memory orchestration.
 
 ## Overview
 
@@ -10,48 +10,53 @@ This driver enables Kubernetes workloads to request CXL (Compute Express Link) p
 2. Prepares the memory for container use via the kubelet plugin interface
 3. Releases memory back to the pool when the pod terminates
 
-## Components
-
-| Component | Description |
-|-----------|-------------|
-| `cmd/controller` | Watches ResourceClaims, calls CXL switch API to allocate/release memory |
-| `cmd/node-plugin` | gRPC server implementing the kubelet DRA plugin interface |
-| `cxl-mock-switch` | Mock CXL hardware switch for development/testing |
-
 ## Requirements
 
 - Kubernetes v1.35+ with `DynamicResourceAllocation` feature gate enabled
-- BuildKit (for in-cluster builds)
-- Go 1.25+ (for local development)
+- Go 1.25+ (for development)
 
 ## Quick Start
 
 ```bash
-# build images and deploy
-./build-in-cluster.sh
-kubectl apply -f deploy/kubernetes/
+# deploy to cluster
+make deploy
 
-# run e2e test
-./e2e-test.sh
+# verify pods are running
+kubectl -n cxl-system get pods
 ```
 
-## Project Structure
+## Development
 
+```bash
+# install dependencies
+go mod download
+
+# run tests
+make test
+
+# run linters
+make lint
+
+# build binaries
+make build
+
+# build container images
+make docker-build
 ```
-├── cmd/
-│   ├── controller/main.go      # DRA controller entrypoint
-│   └── node-plugin/main.go     # Node plugin entrypoint
-├── pkg/
-│   ├── controller/             # Informer-based reconciliation
-│   ├── cxlclient/              # HTTP client for CXL switch
-│   └── nodeplugin/             # gRPC plugin implementation
-├── cxl-mock-switch/            # Mock hardware for testing
-├── deploy/
-│   ├── kubernetes/             # RBAC, deployments, device class
-│   ├── buildkit/               # In-cluster build infrastructure
-│   └── test-workload.yaml      # Sample pod with CXL claim
-└── Dockerfile.*                # Multi-stage container builds
-```
+
+See `make help` for all available targets.
+
+## Architecture
+
+The driver consists of three components:
+
+| Component | Description |
+|-----------|-------------|
+| Controller | Watches ResourceClaims, calls CXL switch API to allocate/release memory |
+| Node Plugin | gRPC server implementing the kubelet DRA plugin interface |
+| Mock Switch | Mock CXL hardware switch for development/testing |
+
+See [docs/architecture.md](docs/architecture.md) for detailed design documentation.
 
 ## Usage
 
@@ -74,26 +79,35 @@ spec:
       resourceClaimTemplateName: cxl-memory-claim-template
 ```
 
+See [deploy/examples/](deploy/examples/) for complete examples.
+
 ## Configuration
 
-The controller accepts:
+Controller flags:
 - `--cxl-endpoint` - CXL switch API URL (default: `http://localhost:8080`)
 - `--kubeconfig` - Path to kubeconfig (uses in-cluster config if empty)
 
-The node plugin accepts:
+Node plugin flags:
 - `--node-name` - Kubernetes node name (required)
 
-## Development
+## Deployment
+
+The driver uses Kustomize for deployment:
 
 ```bash
-# run mock switch locally
-go run ./cxl-mock-switch
+# deploy with default settings
+kubectl apply -k deploy/kubernetes
 
-# build and test
-go build ./...
-go test ./...
+# customize image tags
+cd deploy/kubernetes
+kustomize edit set image ghcr.io/justin-oleary/cxl-dra-controller:v1.0.0
+kubectl apply -k .
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE)
