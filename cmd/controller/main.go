@@ -21,10 +21,10 @@ import (
 )
 
 var (
-	kubeconfig   string
-	cxlEndpoint  string
-	healthAddr   string
-	ready        atomic.Bool
+	kubeconfig  string
+	cxlEndpoint string
+	healthAddr  string
+	ready       atomic.Bool
 )
 
 func init() {
