@@ -84,3 +84,102 @@ jobs:
           docker build -t cxl-dra-controller:test -f Dockerfile.controller .
           docker build -t cxl-node-plugin:test -f Dockerfile.node-plugin .
           docker build -t cxl-mock-switch:test -f Dockerfile.mock-switch .
+
+  e2e:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build container images
+        run: |
+          docker build -t cxl-dra-controller:test -f Dockerfile.controller .
+          docker build -t cxl-node-plugin:test -f Dockerfile.node-plugin .
+          docker build -t cxl-mock-switch:test -f Dockerfile.mock-switch .
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: cxl-test
+          config: |
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            featureGates:
+              DynamicResourceAllocation: true
+            runtimeConfig:
+              "resource.k8s.io/v1": "true"
+            nodes:
+              - role: control-plane
+              - role: worker
+
+      - name: Load images into kind
+        run: |
+          kind load docker-image cxl-dra-controller:test --name cxl-test
+          kind load docker-image cxl-node-plugin:test --name cxl-test
+          kind load docker-image cxl-mock-switch:test --name cxl-test
+
+      - name: Deploy CXL DRA driver
+        run: |
+          # patch kustomization to use test images
+          cd deploy/kubernetes
+          cat <<EOF > kustomization-test.yaml
+          apiVersion: kustomize.config.k8s.io/v1beta1
+          kind: Kustomization
+          namespace: cxl-system
+          resources:
+            - rbac.yaml
+            - deviceclass.yaml
+            - resourceslice.yaml
+            - mock-switch.yaml
+            - controller.yaml
+            - daemonset.yaml
+          images:
+            - name: ghcr.io/justin-oleary/cxl-dra-controller
+              newName: cxl-dra-controller
+              newTag: test
+            - name: ghcr.io/justin-oleary/cxl-node-plugin
+              newName: cxl-node-plugin
+              newTag: test
+            - name: ghcr.io/justin-oleary/cxl-mock-switch
+              newName: cxl-mock-switch
+              newTag: test
+          EOF
+          kubectl create namespace cxl-system || true
+          kubectl apply -k . --dry-run=client -o yaml | \
+            sed 's|ghcr.io/justin-oleary/cxl-dra-controller:latest|cxl-dra-controller:test|g' | \
+            sed 's|ghcr.io/justin-oleary/cxl-node-plugin:latest|cxl-node-plugin:test|g' | \
+            sed 's|ghcr.io/justin-oleary/cxl-mock-switch:latest|cxl-mock-switch:test|g' | \
+            kubectl apply -f -
+
+      - name: Wait for controller
+        run: |
+          kubectl -n cxl-system wait --for=condition=available deployment/cxl-dra-controller --timeout=120s
+          kubectl -n cxl-system wait --for=condition=ready pod -l app=cxl-mock-switch --timeout=120s
+          kubectl -n cxl-system get pods
+
+      - name: Run E2E test workload
+        run: |
+          kubectl apply -f deploy/examples/test-workload.yaml
+          echo "Waiting for test pod to be scheduled..."
+          sleep 10
+          kubectl -n cxl-system get resourceclaims
+          kubectl -n cxl-system get pods
+          # verify claim was processed
+          kubectl -n cxl-system get resourceclaim -o jsonpath='{.items[0].metadata.annotations}' | grep -q "cxl.example.com" && echo "ResourceClaim annotation found - allocation successful"
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Controller Logs ==="
+          kubectl -n cxl-system logs deployment/cxl-dra-controller --tail=100 || true
+          echo "=== Mock Switch Logs ==="
+          kubectl -n cxl-system logs deployment/cxl-mock-switch --tail=100 || true
+          echo "=== Node Plugin Logs ==="
+          kubectl -n cxl-system logs daemonset/cxl-node-plugin --tail=100 || true
+          echo "=== Events ==="
+          kubectl -n cxl-system get events --sort-by='.lastTimestamp' || true
