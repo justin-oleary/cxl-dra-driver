@@ -116,35 +116,13 @@ jobs:
 
       - name: Deploy CXL DRA driver
         run: |
-          # patch kustomization to use test images
-          cd deploy/kubernetes
-          cat <<EOF > kustomization-test.yaml
-          apiVersion: kustomize.config.k8s.io/v1beta1
-          kind: Kustomization
-          namespace: cxl-system
-          resources:
-            - rbac.yaml
-            - deviceclass.yaml
-            - resourceslice.yaml
-            - mock-switch.yaml
-            - controller.yaml
-            - daemonset.yaml
-          images:
-            - name: ghcr.io/justin-oleary/cxl-dra-controller
-              newName: cxl-dra-controller
-              newTag: test
-            - name: ghcr.io/justin-oleary/cxl-node-plugin
-              newName: cxl-node-plugin
-              newTag: test
-            - name: ghcr.io/justin-oleary/cxl-mock-switch
-              newName: cxl-mock-switch
-              newTag: test
-          EOF
           kubectl create namespace cxl-system || true
-          kubectl apply -k . --dry-run=client -o yaml | \
+          # render manifests, swap images, set imagePullPolicy to Never for kind
+          kubectl apply -k deploy/kubernetes --dry-run=client -o yaml | \
             sed 's|ghcr.io/justin-oleary/cxl-dra-controller:latest|cxl-dra-controller:test|g' | \
             sed 's|ghcr.io/justin-oleary/cxl-node-plugin:latest|cxl-node-plugin:test|g' | \
             sed 's|ghcr.io/justin-oleary/cxl-mock-switch:latest|cxl-mock-switch:test|g' | \
+            sed 's|imagePullPolicy: Always|imagePullPolicy: Never|g' | \
             kubectl apply -f -
 
       - name: Wait for controller
