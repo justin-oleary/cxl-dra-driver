@@ -106,16 +106,7 @@ jobs:
         uses: helm/kind-action@v1
         with:
           cluster_name: cxl-test
-          config: |
-            kind: Cluster
-            apiVersion: kind.x-k8s.io/v1alpha4
-            featureGates:
-              DynamicResourceAllocation: true
-            runtimeConfig:
-              "resource.k8s.io/v1": "true"
-            nodes:
-              - role: control-plane
-              - role: worker
+          config: .github/kind-config.yaml
 
       - name: Load images into kind
         run: |
