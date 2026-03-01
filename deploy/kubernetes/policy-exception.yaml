@@ -16,13 +16,19 @@ spec:
     - policyName: pod-security-baseline
       ruleNames:
         - autogen-disallow-privilege-escalation
+        - autogen-disallow-privileged-containers
         - autogen-drop-all-capabilities
         - disallow-privilege-escalation
+        - disallow-privileged-containers
         - drop-all-capabilities
     - policyName: disallow-privilege-escalation
       ruleNames:
         - autogen-privilege-escalation
         - privilege-escalation
+    - policyName: disallow-privileged-containers
+      ruleNames:
+        - autogen-privileged-containers
+        - privileged-containers
     - policyName: disallow-capabilities-strict
       ruleNames:
         - autogen-require-drop-all
@@ -33,6 +39,14 @@ spec:
       ruleNames:
         - autogen-check-seccomp-strict
         - check-seccomp-strict
+    - policyName: disallow-host-path
+      ruleNames:
+        - autogen-host-path
+        - host-path
+    - policyName: restrict-volume-types
+      ruleNames:
+        - autogen-restricted-volumes
+        - restricted-volumes
   match:
     any:
       - resources:

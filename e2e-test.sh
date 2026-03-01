@@ -42,6 +42,7 @@ echo "=== Step 4: Deploying DRA Driver ==="
 kubectl apply -f deploy/kubernetes/deviceclass.yaml
 kubectl apply -f deploy/kubernetes/controller.yaml
 kubectl apply -f deploy/kubernetes/daemonset.yaml
+kubectl apply -f deploy/kubernetes/resourceslice.yaml
 
 # step 5: wait for pods
 echo ""
