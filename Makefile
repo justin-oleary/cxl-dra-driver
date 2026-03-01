@@ -36,7 +36,8 @@ $(MOCK_SWITCH): $(BINARY_DIR)
 
 ## Test targets
 test:
-	go test -race -v ./...
+	go test -race -coverprofile=coverage.out -v ./...
+	@go tool cover -func=coverage.out | grep total | awk '{print "Coverage: " $$3}'
 
 fuzz:
 	go test -fuzz=FuzzGetAllocationMeta -fuzztime=30s ./pkg/controller/...
