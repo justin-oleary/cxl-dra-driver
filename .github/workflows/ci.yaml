@@ -131,6 +131,32 @@ jobs:
           kubectl -n cxl-system wait --for=condition=ready pod -l app=cxl-mock-switch --timeout=120s
           kubectl -n cxl-system get pods
 
+      - name: Create ResourceSlice for kind worker
+        run: |
+          WORKER_NODE=$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[0].metadata.name}')
+          echo "Creating ResourceSlice for node: $WORKER_NODE"
+          cat <<EOF | kubectl apply -f -
+          apiVersion: resource.k8s.io/v1
+          kind: ResourceSlice
+          metadata:
+            name: cxl-memory-kind
+          spec:
+            driver: cxl.example.com
+            pool:
+              name: kind-cxl-pool
+              generation: 1
+              resourceSliceCount: 1
+            nodeName: ${WORKER_NODE}
+            devices:
+              - name: cxl-mem-0
+                attributes:
+                  type:
+                    string: "cxl-memory"
+                  sizeGB:
+                    int: 64
+          EOF
+          kubectl get resourceslices
+
       - name: Run E2E test workload
         run: |
           kubectl apply -f deploy/examples/test-workload.yaml
