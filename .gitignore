@@ -1,0 +1,28 @@
+# Build artifacts
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+coverage.out
+pkg/controller/testdata/fuzz/
+
+# License keys (NEVER commit private keys)
+license.key
+license.pub
+*.license.json
+test-license.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

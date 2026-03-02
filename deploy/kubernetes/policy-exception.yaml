@@ -1,0 +1,58 @@
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: cxl-dra-driver-exception
+  namespace: cxl-system
+spec:
+  exceptions:
+    - policyName: disallow-host-namespaces
+      ruleNames:
+        - autogen-host-namespaces
+        - host-namespaces
+    - policyName: require-run-as-nonroot
+      ruleNames:
+        - autogen-run-as-non-root
+        - run-as-non-root
+    - policyName: pod-security-baseline
+      ruleNames:
+        - autogen-disallow-privilege-escalation
+        - autogen-disallow-privileged-containers
+        - autogen-drop-all-capabilities
+        - disallow-privilege-escalation
+        - disallow-privileged-containers
+        - drop-all-capabilities
+    - policyName: disallow-privilege-escalation
+      ruleNames:
+        - autogen-privilege-escalation
+        - privilege-escalation
+    - policyName: disallow-privileged-containers
+      ruleNames:
+        - autogen-privileged-containers
+        - privileged-containers
+    - policyName: disallow-capabilities-strict
+      ruleNames:
+        - autogen-require-drop-all
+        - autogen-adding-capabilities-strict
+        - require-drop-all
+        - adding-capabilities-strict
+    - policyName: restrict-seccomp-strict
+      ruleNames:
+        - autogen-check-seccomp-strict
+        - check-seccomp-strict
+    - policyName: disallow-host-path
+      ruleNames:
+        - autogen-host-path
+        - host-path
+    - policyName: restrict-volume-types
+      ruleNames:
+        - autogen-restricted-volumes
+        - restricted-volumes
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+            - DaemonSet
+          namespaces:
+            - cxl-system

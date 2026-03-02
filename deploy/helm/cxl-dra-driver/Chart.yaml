@@ -1,0 +1,19 @@
+apiVersion: v2
+name: cxl-dra-driver
+description: Kubernetes Dynamic Resource Allocation driver for CXL pooled memory orchestration
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.35.0-0"
+keywords:
+  - cxl
+  - memory
+  - dra
+  - dynamic-resource-allocation
+  - kubernetes
+home: https://github.com/justin-oleary/cxl-dra-driver
+sources:
+  - https://github.com/justin-oleary/cxl-dra-driver
+maintainers:
+  - name: justin-oleary
+    url: https://github.com/justin-oleary

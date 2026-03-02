@@ -1,0 +1,37 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cxl-dra-driver.fullname" . }}
+  labels:
+    {{- include "cxl-dra-driver.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceclaims"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceclaims/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceslices"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "cxl-dra-driver.fullname" . }}
+  labels:
+    {{- include "cxl-dra-driver.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "cxl-dra-driver.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cxl-dra-driver.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

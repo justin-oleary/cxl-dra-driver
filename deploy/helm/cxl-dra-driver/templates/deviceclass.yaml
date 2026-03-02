@@ -1,0 +1,10 @@
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: cxl-memory-pool
+  labels:
+    {{- include "cxl-dra-driver.labels" . | nindent 4 }}
+spec:
+  selectors:
+    - cel:
+        expression: 'device.driver == "{{ .Values.cxl.driverName }}"'

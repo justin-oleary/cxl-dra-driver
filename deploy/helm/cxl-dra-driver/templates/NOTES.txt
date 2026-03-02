@@ -1,0 +1,16 @@
+CXL DRA Driver has been installed.
+
+COMPONENTS:
+  Controller: {{ include "cxl-dra-driver.fullname" . }}-controller
+  Node Plugin: {{ include "cxl-dra-driver.fullname" . }}-node-plugin (DaemonSet)
+{{- if .Values.mockSwitch.enabled }}
+  Mock Switch: {{ include "cxl-dra-driver.fullname" . }}-mock-switch
+{{- end }}
+
+VERIFY INSTALLATION:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl get deviceclass cxl-memory-pool
+
+CXL ENDPOINT: {{ .Values.cxl.endpoint }}
+
+For more information, visit: https://github.com/justin-oleary/cxl-dra-driver

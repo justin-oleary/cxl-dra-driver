@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cxl-mock-switch
+  namespace: cxl-system
+  labels:
+    app: cxl-mock-switch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cxl-mock-switch
+  template:
+    metadata:
+      labels:
+        app: cxl-mock-switch
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: switch
+          image: localhost:30500/cxl-mock-switch:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cxl-mock-switch
+  namespace: cxl-system
+spec:
+  selector:
+    app: cxl-mock-switch
+  ports:
+    - port: 8080
+      targetPort: 8080

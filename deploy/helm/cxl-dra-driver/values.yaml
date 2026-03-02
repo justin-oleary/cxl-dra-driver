@@ -1,0 +1,97 @@
+# CXL DRA Driver Helm Values
+
+# Controller configuration
+controller:
+  image:
+    repository: ghcr.io/justin-oleary/cxl-dra-controller
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Node plugin configuration
+nodePlugin:
+  image:
+    repository: ghcr.io/justin-oleary/cxl-node-plugin
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  nodeSelector: {}
+  tolerations:
+    - operator: Exists
+      effect: NoSchedule
+
+# Mock switch (for development/testing only)
+mockSwitch:
+  enabled: false
+  image:
+    repository: ghcr.io/justin-oleary/cxl-mock-switch
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# CXL hardware switch configuration
+cxl:
+  # CXL switch API endpoint
+  endpoint: "http://cxl-mock-switch:8080"
+  # Driver name for DRA registration
+  driverName: "cxl.example.com"
+
+# Service account configuration
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pod security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Resource management
+resourceSlice:
+  # Create a default ResourceSlice (for testing)
+  create: false
+  nodeName: ""
+  poolName: "default-cxl-pool"
+  devices:
+    - name: cxl-mem-0
+      sizeGB: 64
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Full name override
+fullnameOverride: ""
+nameOverride: ""

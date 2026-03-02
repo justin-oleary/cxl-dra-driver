@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "cxl-dra-driver.fullname" . }}-node-plugin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cxl-dra-driver.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-plugin
+spec:
+  selector:
+    matchLabels:
+      {{- include "cxl-dra-driver.nodePluginSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cxl-dra-driver.nodePluginSelectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "cxl-dra-driver.serviceAccountName" . }}
+      containers:
+        - name: plugin
+          image: "{{ .Values.nodePlugin.image.repository }}:{{ .Values.nodePlugin.image.tag }}"
+          imagePullPolicy: {{ .Values.nodePlugin.image.pullPolicy }}
+          args:
+            - --node-name=$(NODE_NAME)
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+          resources:
+            {{- toYaml .Values.nodePlugin.resources | nindent 12 }}
+          volumeMounts:
+            - name: kubelet-plugins
+              mountPath: /var/lib/kubelet/plugins
+            - name: kubelet-plugins-registry
+              mountPath: /var/lib/kubelet/plugins_registry
+      volumes:
+        - name: kubelet-plugins
+          hostPath:
+            path: /var/lib/kubelet/plugins
+            type: Directory
+        - name: kubelet-plugins-registry
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+      {{- with .Values.nodePlugin.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodePlugin.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

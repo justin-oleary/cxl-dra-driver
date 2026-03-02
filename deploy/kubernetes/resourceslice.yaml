@@ -1,0 +1,18 @@
+apiVersion: resource.k8s.io/v1
+kind: ResourceSlice
+metadata:
+  name: cxl-memory-plex
+spec:
+  driver: cxl.example.com
+  pool:
+    name: plex-cxl-pool
+    generation: 1
+    resourceSliceCount: 1
+  nodeName: plex
+  devices:
+    - name: cxl-mem-0
+      attributes:
+        type:
+          string: "cxl-memory"
+        sizeGB:
+          int: 64

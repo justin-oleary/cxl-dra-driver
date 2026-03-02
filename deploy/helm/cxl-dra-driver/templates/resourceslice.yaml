@@ -1,0 +1,24 @@
+{{- if .Values.resourceSlice.create }}
+apiVersion: resource.k8s.io/v1
+kind: ResourceSlice
+metadata:
+  name: {{ include "cxl-dra-driver.fullname" . }}-slice
+  labels:
+    {{- include "cxl-dra-driver.labels" . | nindent 4 }}
+spec:
+  driver: {{ .Values.cxl.driverName }}
+  pool:
+    name: {{ .Values.resourceSlice.poolName }}
+    generation: 1
+    resourceSliceCount: 1
+  nodeName: {{ required "resourceSlice.nodeName is required when resourceSlice.create is true" .Values.resourceSlice.nodeName }}
+  devices:
+    {{- range .Values.resourceSlice.devices }}
+    - name: {{ .name }}
+      attributes:
+        type:
+          string: "cxl-memory"
+        sizeGB:
+          int: {{ .sizeGB }}
+    {{- end }}
+{{- end }}
