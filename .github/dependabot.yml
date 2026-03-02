@@ -1,19 +1,34 @@
+# Dependabot configuration for automated dependency updates
+# Demonstrates proactive supply chain management
+
 version: 2
 updates:
+  # Go modules
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
     commit-message:
       prefix: "deps"
-    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "go"
 
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "ci"
-    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
